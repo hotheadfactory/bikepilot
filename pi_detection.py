@@ -46,8 +46,8 @@ while True:
 
     # grab the frame dimensions and convert it to a blob
     (h, w) = frame.shape[:2]
-    blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)),
-        0.007843, (300, 300), 127.5)
+    blob = cv2.dnn.blobFromImage(cv2.resize(frame, (100, 100)),
+        0.007843, (100, 100), 127.5)
 
     # pass the blob through the network and obtain the detections and
     # predictions
@@ -74,7 +74,6 @@ while True:
             label = "{}: {:.2f}%".format(CLASSES[idx],
                 confidence * 100)
             print(CLASSES[idx]+" "+str(confidence*100)+"%")
-            time.sleep(0.5)
             cv2.rectangle(frame, (startX, startY), (endX, endY),
                 COLORS[idx], 2)
             y = startY - 15 if startY - 15 > 15 else startY + 15
