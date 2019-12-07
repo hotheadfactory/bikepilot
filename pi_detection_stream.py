@@ -34,7 +34,8 @@ net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
 # initialize the video stream, allow the camera sensor to warm up,
 # and initialize the FPS counter
 print("[INFO] starting video stream...")
-vs = VideoStream(src=0).start()
+vs = VideoStream("http://127.0.0.1:8090/?action=stream").start()
+#vs = VideoStream(src=0).start()
 # vs = VideoStream(usePiCamera=True).start()
 time.sleep(2.0)
 fps = FPS().start()
@@ -48,8 +49,8 @@ while True:
 
     # grab the frame dimensions and convert it to a blob
     (h, w) = frame.shape[:2]
-    blob = cv2.dnn.blobFromImage(cv2.resize(frame, (100, 100)),
-        0.007843, (100, 100), 127.5)
+    blob = cv2.dnn.blobFromImage(cv2.resize(frame, (150, 150)),
+        0.007843, (150, 150), 127.5)
 
     # pass the blob through the network and obtain the detections and
     # predictions
@@ -77,8 +78,10 @@ while True:
                 confidence * 100)
             now = datetime.datetime.now()
             time = ('%s-%s-%s %s:%s:%s' % (now.year, now.month, now.day, now.hour, now.minute, now.second))
-            if(confidence > 0.8):
+            if(CLASSES[idx] in ("person", "car") and confidence > 0.7):
                 print(time+" "+CLASSES[idx]+" "+str(confidence*100)+"%")
+                if (endX-startX)*(endY-startY) > 60000 :
+                    print("beep! Emergency stop.")
             cv2.rectangle(frame, (startX, startY), (endX, endY),
                 COLORS[idx], 2)
             y = startY - 15 if startY - 15 > 15 else startY + 15
