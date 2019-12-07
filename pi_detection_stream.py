@@ -1,13 +1,15 @@
 # import the necessary packages
 from imutils.video import VideoStream
 from imutils.video import FPS
-import RPi.GPIO as GPIO
 import numpy as np
 import argparse
 import imutils
 import datetime
 import time
 import cv2
+
+frame_width=600
+accuracy=(300, 300)
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -35,6 +37,8 @@ net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
 # and initialize the FPS counter
 print("[INFO] starting video stream...")
 vs = VideoStream("http://127.0.0.1:8090/?action=stream").start()
+#vs = VideoStream("http://192.168.0.65:8090/?action=stream").start()
+#vs = VideoStream("http://10.42.0.196:8090/?action=stream").start()
 #vs = VideoStream(src=0).start()
 # vs = VideoStream(usePiCamera=True).start()
 time.sleep(2.0)
@@ -45,18 +49,19 @@ while True:
     # grab the frame from the threaded video stream and resize it
     # to have a maximum width of 400 pixels
     frame = vs.read()
-    frame = imutils.resize(frame, width=400)
+    frame = imutils.resize(frame, width=frame_width)
+    rect = cv2.rectangle(frame, (int(frame_width*0.3),0),(int(frame_width*0.7),int(frame_width*3/4)),(0,0,255), 1)
 
     # grab the frame dimensions and convert it to a blob
     (h, w) = frame.shape[:2]
-    blob = cv2.dnn.blobFromImage(cv2.resize(frame, (150, 150)),
-        0.007843, (150, 150), 127.5)
+    blob = cv2.dnn.blobFromImage(cv2.resize(frame, accuracy),
+        0.007843, accuracy, 127.5)
 
     # pass the blob through the network and obtain the detections and
     # predictions
     net.setInput(blob)
     detections = net.forward()
-
+    
     # loop over the detections
     for i in np.arange(0, detections.shape[2]):
         # extract the confidence (i.e., probability) associated with
@@ -77,11 +82,19 @@ while True:
             label = "{}: {:.2f}%".format(CLASSES[idx],
                 confidence * 100)
             now = datetime.datetime.now()
-            time = ('%s-%s-%s %s:%s:%s' % (now.year, now.month, now.day, now.hour, now.minute, now.second))
-            if(CLASSES[idx] in ("person", "car") and confidence > 0.7):
-                print(time+" "+CLASSES[idx]+" "+str(confidence*100)+"%")
-                if (endX-startX)*(endY-startY) > 60000 :
-                    print("beep! Emergency stop.")
+            timeToString = ('%s-%s-%s %s:%s:%s' % (now.year, now.month, now.day, now.hour, now.minute, now.second))
+            if(CLASSES[idx] in ("person", "car", "bus") and confidence > 0.7):
+                print(timeToString+" "+CLASSES[idx]+" "+str(confidence*100)+"%")
+                print(startX)
+                if frame_width*0.3 < startX < frame_width*0.7 :
+                    if (endX-startX)*(endY-startY) > 40000:
+                        print("\aWarning")
+                    if (endX-startX)*(endY-startY) > 60000:
+                        print("\a\aEmergency Stop")
+                        time.sleep(0.3)
+                        print("\a")
+                        time.sleep(0.3)
+                        print("\a")
             cv2.rectangle(frame, (startX, startY), (endX, endY),
                 COLORS[idx], 2)
             y = startY - 15 if startY - 15 > 15 else startY + 15

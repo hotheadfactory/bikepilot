@@ -1,0 +1,48 @@
+import RPi.GPIO as GPIO
+import time
+import threading
+
+GPIO.setmode(GPIO.BCM)
+
+GPIO.setup(16, GPIO.IN)
+GPIO.setup(20, GPIO.IN)
+GPIO.setup(21, GPIO.IN)
+GPIO.setup(17, GPIO.OUT)
+GPIO.setup(22, GPIO.OUT)
+
+def toggle(pin):
+    if(GPIO.input(pin)):
+        GPIO.output(pin, GPIO.LOW)
+    else:
+        GPIO.output(pin, GPIO.HIGH)
+
+def blink():
+    if le.isSet():
+        print("17 set")
+        toggle(17)
+    if re.isSet():
+        print("22 set")
+        toggle(22)
+    time.sleep(0.5)
+
+le = threading.Event()
+re = threading.Event()
+t = threading.Thread(target=blink)
+t.start()
+
+
+try:
+    while True:
+        right = GPIO.input(21)
+        left = GPIO.input(16)
+        if left == False:
+            print("left set")
+            le.set()
+        if right == False:
+            print("right set")
+            re.set()
+
+        toggle(17)
+        toggle(22)
+except KeyboardInterrupt:
+    GPIO.cleanup()
