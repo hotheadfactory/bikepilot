@@ -7,9 +7,20 @@ import imutils
 import datetime
 import time
 import cv2
+import pyglet
 
 frame_width=1200
 accuracy=(300, 300)
+song = pyglet.media.load("honk.mp3")
+
+class buzzer:
+    def warning() :
+        print("\a")
+        time.sleep(1.0)
+    def stop() :
+        for i in (0,4):
+            print("\a")
+            time.sleep(0.25)
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -37,8 +48,8 @@ net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
 # and initialize the FPS counter
 print("[INFO] starting video stream...")
 #vs = VideoStream("http://192.168.0.65:8090/?action=stream").start()
-vs = VideoStream("http://10.42.0.196:8090/?action=stream").start()
-#vs = VideoStream(src=0).start()
+#vs = VideoStream("http://10.42.0.196:8090/?action=stream").start()
+vs = VideoStream(src=2).start()
 # vs = VideoStream(usePiCamera=True).start()
 time.sleep(2.0)
 fps = FPS().start()
@@ -49,8 +60,9 @@ while True:
     # to have a maximum width of 400 pixels
     frame = vs.read()
     frame = imutils.resize(frame, width=frame_width)
-    rect = cv2.rectangle(frame, (int(frame_width*0.3),0),(int(frame_width*0.7),int(frame_width*3/4)),(0,0,255), 1)
-
+    rect = cv2.rectangle(frame, (int(frame_width*0.35),0),(int(frame_width*0.65),int(frame_width*3/4)),(0,0,255), 1)
+    cv2.putText(frame, "hotheadfactory", (int(frame_width-240),int(frame_width*3/4)-10),
+    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 1)
     # grab the frame dimensions and convert it to a blob
     (h, w) = frame.shape[:2]
     blob = cv2.dnn.blobFromImage(cv2.resize(frame, accuracy),
@@ -82,18 +94,28 @@ while True:
                 confidence * 100)
             now = datetime.datetime.now()
             timeToString = ('%s-%s-%s %s:%s:%s' % (now.year, now.month, now.day, now.hour, now.minute, now.second))
-            if(CLASSES[idx] in ("person", "car", "bus") and confidence > 0.7):
-                print(timeToString+" "+CLASSES[idx]+" "+str(confidence*100)+"%")
-                print(startX)
-                if frame_width*0.3 < startX < frame_width*0.7 :
-                    if (endX-startX)*(endY-startY) > 40000:
-                        print("\aWarning")
-                    if (endX-startX)*(endY-startY) > 60000:
-                        print("\a\aEmergency Stop")
-                        time.sleep(0.3)
-                        print("\a")
-                        time.sleep(0.3)
-                        print("\a")
+            cv2.putText(frame, timeToString, (0,int(frame_width*3/4)-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 1)
+            if(CLASSES[idx] == "person" and confidence > 0.7):
+                #print("["+timeToString+"] "+CLASSES[idx]+" "+str(int(confidence*10000)/100)+"%")
+                if frame_width*0.35 < startX < frame_width*0.65 :
+                    if 20000 < (endX-startX)*(endY-startY) < 40000:
+                        print(timeToString+": Pedestrian Warning")
+                        cv2.putText(frame, "Pedestrian", (10,60),
+                            cv2.FONT_HERSHEY_SIMPLEX, 2, (0,0,255), 2)
+                    if (endX-startX)*(endY-startY) >= 40000:
+                        print(timeToString+": \aEmergency Stop!")
+                        cv2.putText(frame, "STOP!!", (10,60),
+                            cv2.FONT_HERSHEY_SIMPLEX, 2, (0,0,255), 2)
+            if(CLASSES[idx] in ("car", "bus") and confidence > 0.7):
+                if frame_width*0.35 < startX < frame_width*0.65 :
+                    if 40000 < (endX-startX)*(endY-startY) < 60000:
+                        print(timeToString+": \aCar Warning")
+                        cv2.putText(frame, "Car", (10,60),
+                            cv2.FONT_HERSHEY_SIMPLEX, 2, (0,0,255), 2)
+                    elif (endX-startX)*(endY-startY) >= 60000:
+                        print(timeToString+": \aEmergency Stop!") 
+                        cv2.putText(frame, "STOP!!", (10,60),
+                            cv2.FONT_HERSHEY_SIMPLEX, 2, (0,0,255), 2)
             cv2.rectangle(frame, (startX, startY), (endX, endY),
                 COLORS[idx], 2)
             y = startY - 15 if startY - 15 > 15 else startY + 15
