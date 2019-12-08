@@ -4,10 +4,15 @@ import threading
 
 GPIO.setmode(GPIO.BCM)
 
+GPIO_TRIGGER = 5
+GPIO_ECHO = 6
+
 GPIO.setup(16, GPIO.IN)
 GPIO.setup(20, GPIO.IN)
 GPIO.setup(21, GPIO.IN)
 GPIO.setup(12, GPIO.IN)
+GPIO.setup(GPIO_ECHO, GPIO.IN)
+GPIO.setup(GPIO_TRIGGER, GPIO.OUT)
 GPIO.setup(17, GPIO.OUT)
 GPIO.setup(22, GPIO.OUT)
 GPIO.setup(18, GPIO.OUT)
@@ -39,6 +44,24 @@ def honk():
         else:
             GPIO.output(18, GPIO.LOW)
 
+def ultrasonic():
+    startTime = time.time()
+    stopTime = time.time()
+    while True:
+        GPIO.output(GPIO_TRIGGER, True)
+        time.sleep(0.00001)
+        GPIO.output(GPIO_TRIGGER, False)
+        while GPIO.input(GPIO_ECHO) == 0:
+            startTime = time.time()
+        while GPIO.input(GPIO_ECHO) == 1:
+            stopTime = time.time()
+        timeElapsed = stopTime - startTime
+        distance = (timeElapsed * 34300) / 2
+        if distance < 40:
+            GPIO.output(18, GPIO.HIGH)
+        time.sleep(0.4)
+        GPIO.output(18, GPIO.LOW)
+
 le = threading.Event()
 re = threading.Event()
 ee = threading.Event()
@@ -46,6 +69,8 @@ t = threading.Thread(target=blink)
 t.start()
 h = threading.Thread(target=honk)
 h.start()
+us = threading.Thread(target=ultrasonic)
+us.start()
 
 
 try:
