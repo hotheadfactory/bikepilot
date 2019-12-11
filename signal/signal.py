@@ -16,6 +16,7 @@ GPIO.setup(GPIO_TRIGGER, GPIO.OUT)
 GPIO.setup(17, GPIO.OUT)
 GPIO.setup(22, GPIO.OUT)
 GPIO.setup(18, GPIO.OUT)
+p = GPIO.PWM(18, 100)
 
 def toggle(pin):
     if(GPIO.input(pin)):
@@ -58,10 +59,12 @@ def ultrasonic():
         timeElapsed = stopTime - startTime
         distance = (timeElapsed * 34300) / 2
         if distance < 40:
-            GPIO.output(18, GPIO.HIGH)
-        time.sleep(0.4)
-        GPIO.output(18, GPIO.LOW)
-
+            print(str(time.time())+" obstacle detected! "+str(distance))
+            for i in (0,2):
+                p.start(90)
+                time.sleep(0.1)
+                p.stop()
+                time.sleep(0.4)
 le = threading.Event()
 re = threading.Event()
 ee = threading.Event()
@@ -72,6 +75,9 @@ h.start()
 us = threading.Thread(target=ultrasonic)
 us.start()
 
+print("--------------------------------------------------------------------------------------------------")
+print("                         BikePilot v0.0.3. Copyright(c) HotheadFactory")
+print("--------------------------------------------------------------------------------------------------")
 
 try:
     while True:
@@ -111,6 +117,5 @@ try:
                 GPIO.output(22, GPIO.LOW)
                 time.sleep(0.2)
                 ee.set()
-
 except KeyboardInterrupt:
     GPIO.cleanup()
